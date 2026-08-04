@@ -150,7 +150,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `/me ¡"${finalName}" añadido con éxito! 😎`);
+    await responderChat(client, channel, `/me ¡" ${finalName} " añadido con éxito! 😎`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
@@ -185,7 +185,7 @@ async function manejarComandoDelEmote(client, channel, args) {
     }
 
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
-    await responderChat(client, channel, `/me ¡Emote "${targetEmote.name}", eliminado! 🗑️`);
+    await responderChat(client, channel, `/me ¡Emote " ${targetEmote.name} ", eliminado! 🗑️`);
 
   } catch (error) {
     console.error('Error en comando -del:', error);

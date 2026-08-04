@@ -181,7 +181,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `/me ¡" ${finalName} " añadido con éxito! 😎`);
+    await responderChat(client, channel, `/me ¡" ${finalName} " añadido! 😎`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
@@ -280,7 +280,7 @@ async function manejarComandoSetInfo(client, channel, args) {
     const sortedByRecent = [...emotes].sort((a, b) => b.timestamp - a.timestamp);
     const masReciente = sortedByRecent[0]?.name || 'Ninguno';
 
-    await responderChat(client, channel, `📊 Estado del Set actual de emotes: [${emotes.length}/${capacity}] | Último añadido: " ${masReciente} " ⚡`);
+    await responderChat(client, channel, `/me set actual de emotes: [${emotes.length}/${capacity}]`);
 
   } catch (error) {
     console.error('Error en comando -set:', error);

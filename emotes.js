@@ -50,14 +50,16 @@ async function getActiveEmoteSetId(userId) {
   return activeSetId;
 }
 
-// 2. Obtiene la lista actual de emotes estructurada correctamente según 7TV v3 GQL
+// 2. Obtiene la lista actual de emotes y la capacidad máxima (límite) del set
 async function getEmotesInSet(emoteSetId) {
   const query = `
     query GetEmoteSet($id: ObjectID!) {
       emoteSet(id: $id) {
+        capacity
         emotes {
           id
           name
+          timestamp
         }
       }
     }
@@ -75,8 +77,14 @@ async function getEmotesInSet(emoteSetId) {
     throw new Error(`Error GraphQL: ${data.errors[0].message}`);
   }
 
-  const emotesList = data.data?.emoteSet?.emotes || [];
-  return Array.isArray(emotesList) ? emotesList : [];
+  const emoteSetData = data.data?.emoteSet || {};
+  const emotesList = emoteSetData.emotes || [];
+  const capacity = emoteSetData.capacity || 0;
+
+  return {
+    emotes: Array.isArray(emotesList) ? emotesList : [],
+    capacity: capacity
+  };
 }
 
 // 3. Ejecuta la mutación GraphQL para modificar el set (ADD o REMOVE)
@@ -124,14 +132,12 @@ async function modify7TVEmoteSet(emoteSetId, emoteId, action, token, customName 
 }
 
 // 4. Manejador del comando -add
-// 4. Manejador del comando -add
-// 4. Manejador del comando -add
 async function manejarComandoAddEmote(client, channel, args) {
   const emoteId = args[0];
   const customName = args[1] || null;
 
   if (!emoteId) {
-    return await responderChat(client, channel, '⚠️ Para usar el comando -add: "-add <ID_EMOTE> [nombre del emote]" (el nombre es opcional)');
+    return await responderChat(client, channel, '⚠️ Para usar el comando -add: "-add <ID_EMOTE> [nombre del emote]"');
   }
 
   try {
@@ -143,14 +149,16 @@ async function manejarComandoAddEmote(client, channel, args) {
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
     
-    // Ejecutamos la mutación y guardamos el set actualizado que devuelve 7TV
+    // Ejecutamos la mutación
     const updatedSet = await modify7TVEmoteSet(activeSetId, emoteId, 'ADD', token, customName);
 
-    // Buscamos el emote dentro del set actualizado para obtener su nombre real
+    // Consultamos el estado actual actualizado para obtener cantidad y límite exactos
+    const { emotes, capacity } = await getEmotesInSet(activeSetId);
+
     const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `/me ¡" ${finalName} " añadido con éxito! 😎`);
+    await responderChat(client, channel, `/me ¡"${finalName}" añadido con éxito! 😎 [${emotes.length}/${capacity}]`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
@@ -174,9 +182,9 @@ async function manejarComandoDelEmote(client, channel, args) {
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
-    const currentEmotes = await getEmotesInSet(activeSetId);
+    const { emotes } = await getEmotesInSet(activeSetId);
 
-    const targetEmote = currentEmotes.find(
+    const targetEmote = emotes.find(
       e => e && e.name && e.name.toLowerCase() === emoteName.toLowerCase()
     );
 
@@ -185,7 +193,11 @@ async function manejarComandoDelEmote(client, channel, args) {
     }
 
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
-    await responderChat(client, channel, `/me ¡Emote " ${targetEmote.name} ", eliminado! 🗑️`);
+    
+    // Consultar de nuevo para reflejar el conteo actualizado tras el borrado
+    const setAfterRemove = await getEmotesInSet(activeSetId);
+
+    await responderChat(client, channel, `/me ¡Emote "${targetEmote.name}" eliminado! 🗑️ [${setAfterRemove.emotes.length}/${setAfterRemove.capacity}]`);
 
   } catch (error) {
     console.error('Error en comando -del:', error);
@@ -193,7 +205,7 @@ async function manejarComandoDelEmote(client, channel, args) {
   }
 }
 
-// 6. Manejador del comando -rename (Reemplaza el nombre existente borrando el viejo y añadiendo el nuevo con el mismo ID)
+// 6. Manejador del comando -rename
 async function manejarComandoRenameEmote(client, channel, args) {
   const currentName = args[0];
   const newName = args[1];
@@ -210,10 +222,9 @@ async function manejarComandoRenameEmote(client, channel, args) {
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
-    const currentEmotes = await getEmotesInSet(activeSetId);
+    const { emotes, capacity } = await getEmotesInSet(activeSetId);
 
-    // Buscar el emote actual para obtener su ID único y su nombre exacto
-    const targetEmote = currentEmotes.find(
+    const targetEmote = emotes.find(
       e => e && e.name && e.name.toLowerCase() === currentName.toLowerCase()
     );
 
@@ -221,22 +232,42 @@ async function manejarComandoRenameEmote(client, channel, args) {
       return await responderChat(client, channel, `❌ Error: No se encontró ningún emote con el nombre "${currentName}" en el set.`);
     }
 
-    // Paso 1: Remover la instancia anterior del emote del set
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
-
-    // Paso 2: Volver a añadir el mismo ID pero utilizando exclusivamente el nuevo nombre
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'ADD', token, newName);
     
-    await responderChat(client, channel, `/me ¡Emote "${currentName}" cambiado exitosamente a "${newName}"! ✏️`);
+    await responderChat(client, channel, `/me ¡Emote "${currentName}" cambiado a "${newName}"! ✏️ [${emotes.length}/${capacity}]`);
 
   } catch (error) {
-    console.error('Error al renombrar emote:', error);
-    await responderChat(client, channel, `❌ Error al intentar renombrar: ${error.message}`);
+     console.error('Error al renombrar emote:', error);
+     await responderChat(client, channel, `❌ Error al intentar renombrar: ${error.message}`);
+  }
+}
+
+// 7. Manejador del nuevo comando -set (Consulta el estado actual del set)
+async function manejarComandoSetInfo(client, channel, args) {
+  try {
+    const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
+    const { emotes, capacity } = await getEmotesInSet(activeSetId);
+
+    if (emotes.length === 0) {
+      return await responderChat(client, channel, `📊 El set de emotes está vacío [0/${capacity}].`);
+    }
+
+    // Ordenar por fecha de incorporación para mostrar cuál fue el más reciente añadido
+    const sortedByRecent = [...emotes].sort((a, b) => b.timestamp - a.timestamp);
+    const masReciente = sortedByRecent[0]?.name || 'Ninguno';
+
+    await responderChat(client, channel, `📊 Estado del Set actual de emotes: [${emotes.length}/${capacity}] | Último añadido: "${masReciente}" ⚡`);
+
+  } catch (error) {
+    console.error('Error en comando -set:', error);
+    await responderChat(client, channel, `❌ No se pudo obtener la información del set: ${error.message}`);
   }
 }
 
 module.exports = {
   manejarComandoAddEmote,
   manejarComandoDelEmote,
-  manejarComandoRenameEmote
+  manejarComandoRenameEmote,
+  manejarComandoSetInfo
 };

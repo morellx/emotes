@@ -4,7 +4,8 @@ const tmi = require('tmi.js');
 const { 
   manejarComandoAddEmote, 
   manejarComandoDelEmote, 
-  manejarComandoRenameEmote 
+  manejarComandoRenameEmote,
+  manejarComandoSetInfo
 } = require('./emotes');
 
 // Formatear token asegurando el prefijo oauth:
@@ -58,5 +59,7 @@ client.on('message', async (channel, userstate, message, self) => {
     await manejarComandoDelEmote(client, channel, args);
   } else if (command === '-rename') {
     await manejarComandoRenameEmote(client, channel, args);
+  } else if (command === '-set') {
+    await manejarComandoSetInfo(client, channel, args);
   }
 });

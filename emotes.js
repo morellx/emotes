@@ -1,21 +1,44 @@
 // ID de usuario interna de 7TV
 const SEVENTV_USER_ID = '01J454CT00000FEMV6VS56MJFQ';
 
-// Helper para responder en Twitch de forma segura y evitar caídas
+// Helper actualizado: Envía mensajes a través de la API Helix de Twitch para el distintivo de Bot
 async function responderChat(client, channel, mensaje) {
-  if (!client || typeof client.say !== 'function') {
-    console.error('❌ Error: El objeto "client" no está disponible o no se ha inicializado correctamente.');
-    return;
-  }
-
   try {
-    await client.say(channel, mensaje);
-  } catch (err) {
-    if (err.message && err.message.includes('anonymous')) {
-      console.error('❌ [TWITCH AUTH ERROR] El bot está en modo anónimo. Verifica el token OAuth en tu .env');
-    } else {
-      console.error('❌ [CHAT ERROR]', err.message);
+    const clientId = process.env.TWITCH_CLIENT_ID;
+    const rawToken = process.env.TWITCH_ACCESS_TOKEN || ''; // Token OAuth con scope channel:bot y user:write:chat
+    const broadcasterId = process.env.TWITCH_BROADCASTER_ID; // ID numérico de tu canal
+    const senderId = process.env.TWITCH_BOT_USER_ID; // ID numérico de la cuenta del bot
+
+    if (!clientId || !rawToken || !broadcasterId || !senderId) {
+      console.error('❌ Error: Faltan variables de entorno para la API Helix (TWITCH_CLIENT_ID, TWITCH_ACCESS_TOKEN, TWITCH_BROADCASTER_ID, TWITCH_BOT_USER_ID).');
+      return;
     }
+
+    // Aseguramos estrictamente el formato "Bearer <token>" evitando duplicidades o espacios vacíos
+    const cleanToken = rawToken.trim().replace(/^Bearer\s+/i, '');
+    const authHeader = `Bearer ${cleanToken}`;
+
+    const response = await fetch('https://api.twitch.tv/helix/chat/messages', {
+      method: 'POST',
+      headers: {
+        'Client-Id': clientId,
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_id: broadcasterId,
+        sender_id: senderId,
+        message: mensaje
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || (data.data && data.data[0] && !data.data[0].is_sent)) {
+      console.error('❌ [TWITCH HELIX ERROR]', data);
+    }
+  } catch (err) {
+    console.error('❌ [CHAT ERROR - API HELIX]', err.message);
   }
 }
 
@@ -158,7 +181,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `/me ¡"${finalName}" añadido con éxito! 😎 [${emotes.length}/${capacity}]`);
+    await responderChat(client, channel, `/me ¡" ${finalName} " añadido con éxito! 😎 [${emotes.length}/${capacity}]`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
@@ -197,7 +220,7 @@ async function manejarComandoDelEmote(client, channel, args) {
     // Consultar de nuevo para reflejar el conteo actualizado tras el borrado
     const setAfterRemove = await getEmotesInSet(activeSetId);
 
-    await responderChat(client, channel, `/me ¡Emote "${targetEmote.name}" eliminado! 🗑️ [${setAfterRemove.emotes.length}/${setAfterRemove.capacity}]`);
+    await responderChat(client, channel, `/me ¡Emote " ${targetEmote.name} " eliminado! 🗑️ [${setAfterRemove.emotes.length}/${setAfterRemove.capacity}]`);
 
   } catch (error) {
     console.error('Error en comando -del:', error);
@@ -235,7 +258,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'ADD', token, newName);
     
-    await responderChat(client, channel, `/me ¡Emote "${currentName}" cambiado a "${newName}"! ✏️ [${emotes.length}/${capacity}]`);
+    await responderChat(client, channel, `/me ¡Emote " ${currentName} " cambiado a " ${newName} "! ✏️ [${emotes.length}/${capacity}]`);
 
   } catch (error) {
      console.error('Error al renombrar emote:', error);

@@ -257,7 +257,7 @@ async function manejarComandoSetInfo(client, channel, args) {
     const sortedByRecent = [...emotes].sort((a, b) => b.timestamp - a.timestamp);
     const masReciente = sortedByRecent[0]?.name || 'Ninguno';
 
-    await responderChat(client, channel, `📊 Estado del Set actual de emotes: [${emotes.length}/${capacity}] | Último añadido: "${masReciente}" ⚡`);
+    await responderChat(client, channel, `📊 Estado del Set actual de emotes: [${emotes.length}/${capacity}] | Último añadido: " ${masReciente} " ⚡`);
 
   } catch (error) {
     console.error('Error en comando -set:', error);

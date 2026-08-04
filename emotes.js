@@ -124,7 +124,6 @@ async function modify7TVEmoteSet(emoteSetId, emoteId, action, token, customName 
 }
 
 // 4. Manejador del comando -add
-// 4. Manejador del comando -add
 async function manejarComandoAddEmote(client, channel, args) {
   const emoteId = args[0];
   const customName = args[1] || null;
@@ -141,19 +140,15 @@ async function manejarComandoAddEmote(client, channel, args) {
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
-    
-    // Ejecutamos la mutación y guardamos el set actualizado que devuelve 7TV
-    const updatedSet = await modify7TVEmoteSet(activeSetId, emoteId, 'ADD', token, customName);
+    await modify7TVEmoteSet(activeSetId, emoteId, 'ADD', token, customName);
 
-    // Buscamos el emote dentro del set actualizado para obtener su nombre real
-    const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
-    const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
-
-    await responderChat(client, channel, `/me ¡"${finalName}" añadido con éxito! 😎`);
-
+    if (customName) {
+      await responderChat(client, channel, `/me " ${customName} ", ¡Emote añadido! 😎`);
+    } else {
+      await responderChat(client, channel, `/me ¡Emote añadido! 😎`);
+    }
   } catch (error) {
      console.error('Error al añadir emote:', error);
-     await responderChat(client, channel, `❌ Error al añadir el emote: ${error.message}`);
   }
 }
 

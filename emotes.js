@@ -145,7 +145,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     if (customName) {
       await responderChat(client, channel, `/me " ${customName} ", ¡Emote añadido! 😎`);
     } else {
-      await responderChat(client, channel, `/me ¡Emote añadido! 😎`);
+      await responderChat(client, channel, `/me " ${customName} ", ¡Emote añadido! 😎`);
     }
   } catch (error) {
      console.error('Error al añadir emote:', error);

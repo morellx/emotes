@@ -16,12 +16,13 @@ const oauthToken = rawToken.startsWith('oauth:') ? rawToken : `oauth:${rawToken}
 // 🛡️ LISTA BLANCA (WHITELIST) DE IDs DE TWITCH
 // ==========================================
 const WHITELIST_USER_IDS = [
-  '533448153', // Reemplaza esto con el ID numérico de Twitch autorizado
+  '533448153', // propio
   '183535160',
   '784451774',
   '527341680',
   '595123169',
-  '627778369' // Puedes añadir más IDs separados por comas entre comillas
+  '627778369',
+  '817914894'  // regulus 
 ];
 
 // Configuración e inicialización de tmi.js

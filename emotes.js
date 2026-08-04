@@ -181,7 +181,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `/me ¡" ${finalName} " añadido con éxito! 😎 [${emotes.length}/${capacity}]`);
+    await responderChat(client, channel, `/me ¡" ${finalName} " añadido con éxito! 😎`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
@@ -220,7 +220,7 @@ async function manejarComandoDelEmote(client, channel, args) {
     // Consultar de nuevo para reflejar el conteo actualizado tras el borrado
     const setAfterRemove = await getEmotesInSet(activeSetId);
 
-    await responderChat(client, channel, `/me ¡Emote " ${targetEmote.name} " eliminado! 🗑️ [${setAfterRemove.emotes.length}/${setAfterRemove.capacity}]`);
+    await responderChat(client, channel, `/me ¡Emote " ${targetEmote.name} " eliminado! 🗑️`);
 
   } catch (error) {
     console.error('Error en comando -del:', error);
@@ -258,7 +258,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'ADD', token, newName);
     
-    await responderChat(client, channel, `/me ¡Emote " ${currentName} " cambiado a " ${newName} "! ✏️ [${emotes.length}/${capacity}]`);
+    await responderChat(client, channel, `/me ¡Emote " ${currentName} " cambiado a " ${newName} "! ✏️`);
 
   } catch (error) {
      console.error('Error al renombrar emote:', error);

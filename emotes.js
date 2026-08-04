@@ -125,6 +125,7 @@ async function modify7TVEmoteSet(emoteSetId, emoteId, action, token, customName 
 
 // 4. Manejador del comando -add
 // 4. Manejador del comando -add
+// 4. Manejador del comando -add
 async function manejarComandoAddEmote(client, channel, args) {
   const emoteId = args[0];
   const customName = args[1] || null;

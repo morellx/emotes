@@ -1,11 +1,12 @@
 require('dotenv').config();
+
 const tmi = require('tmi.js');
 const { 
   manejarComandoAddEmote, 
   manejarComandoDelEmote, 
   manejarComandoRenameEmote,
   manejarComandoSetInfo
-} = require('./emotes2');
+} = require('./emotes');
 
 // Formatear token asegurando el prefijo oauth:
 const rawToken = process.env.TWITCH_OAUTH || '';
@@ -21,11 +22,10 @@ const WHITELIST_USER_IDS = [
   '527341680',
   '595123169',
   '627778369',
-  '817914894', // regulus 
-  '415934819'  
+  '817914894'  // regulus 
 ];
 
-// Configuración e inicialización de tmi.js para leer el chat
+// Configuración e inicialización de tmi.js
 const client = new tmi.Client({
   options: { debug: true },
   identity: {
@@ -54,7 +54,6 @@ client.on('message', async (channel, userstate, message, self) => {
   const args = cleanMessage.split(/\s+/);
   const command = args.shift().toLowerCase();
 
-  // Al ejecutar estas funciones, internamente usarán la API Helix (en emotes2.js) para responder con insignia
   if (command === '-add') {
     await manejarComandoAddEmote(client, channel, args);
   } else if (command === '-del') {

@@ -140,7 +140,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     const token = process.env.SEVENTV_TOKEN;
 
     if (!token) {
-      return await responderChat(client, channel, '❌ Error: Falta configurar SEVENTV_TOKEN en el archivo .env.');
+      return await responderChat(client, channel, 'Falta configurar SEVENTV_TOKEN en el archivo .env.');
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
@@ -158,7 +158,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     if (customName) {
       const nameConflict = emotes.find(e => e.name.toLowerCase() === customName.toLowerCase());
       if (nameConflict) {
-        return await responderChat(client, channel, `❌ Error: Ya existe un emote con el nombre "${customName}" en este set.`);
+        return await responderChat(client, channel, `Ya existe un emote con el nombre "${customName}" en este set.`);
       }
     }
 
@@ -181,7 +181,7 @@ async function manejarComandoAddEmote(client, channel, args) {
        return await responderChat(client, channel, 'El nombre de este emote entra en conflicto con otro existente en el set.');
      }
 
-     await responderChat(client, channel, `❌ Error al añadir el emote: ${error.message}`);
+     await responderChat(client, channel, `Error al añadir el emote: ${error.message}`);
   }
 }
 
@@ -197,7 +197,7 @@ async function manejarComandoDelEmote(client, channel, args) {
     const token = process.env.SEVENTV_TOKEN;
 
     if (!token) {
-      return await responderChat(client, channel, '❌ Error: Falta configurar SEVENTV_TOKEN en las variables de entorno.');
+      return await responderChat(client, channel, 'Falta configurar SEVENTV_TOKEN en las variables de entorno.');
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
@@ -220,7 +220,7 @@ async function manejarComandoDelEmote(client, channel, args) {
 
   } catch (error) {
     console.error('Error en comando -del:', error);
-    await responderChat(client, channel, `❌ Error al intentar eliminar: ${error.message}`);
+    await responderChat(client, channel, `Error al intentar eliminar: ${error.message}`);
   }
 }
 
@@ -237,7 +237,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
     const token = process.env.SEVENTV_TOKEN;
 
     if (!token) {
-      return await responderChat(client, channel, '❌ Error: Falta configurar SEVENTV_TOKEN en el archivo .env.');
+      return await responderChat(client, channel, 'Error: Falta configurar SEVENTV_TOKEN en el archivo .env.');
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
@@ -258,7 +258,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
 
   } catch (error) {
      console.error('Error al renombrar emote:', error);
-     await responderChat(client, channel, `❌ Error al intentar renombrar: ${error.message}`);
+     await responderChat(client, channel, `Error al intentar renombrar: ${error.message}`);
   }
 }
 

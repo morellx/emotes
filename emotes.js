@@ -171,7 +171,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `¡"${finalName}" agregado! [${setAfterAdd.emotes.length}/${capacity}]`);
+    await responderChat(client, channel, `¡"${finalName}" agregado!`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);

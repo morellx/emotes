@@ -178,7 +178,7 @@ async function manejarComandoAddEmote(client, channel, args) {
      
      // Capturamos el error específico de nombre en conflicto por si la API lo lanza directamente
      if (error.message.includes('conflicting name')) {
-       return await responderChat(client, channel, '❌ Error: El nombre de este emote entra en conflicto con otro existente en el set.');
+       return await responderChat(client, channel, 'El nombre de este emote entra en conflicto con otro existente en el set.');
      }
 
      await responderChat(client, channel, `❌ Error al añadir el emote: ${error.message}`);
@@ -208,7 +208,7 @@ async function manejarComandoDelEmote(client, channel, args) {
     );
 
     if (!targetEmote) {
-      return await responderChat(client, channel, `❌ Error: No se encontró el emote "${emoteName}" en el set activo.`);
+      return await responderChat(client, channel, `No se encontró el emote "${emoteName}" en el set activo.`);
     }
 
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
@@ -248,7 +248,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
     );
 
     if (!targetEmote) {
-      return await responderChat(client, channel, `❌ Error: No se encontró ningún emote con el nombre "${currentName}" en el set.`);
+      return await responderChat(client, channel, `No se encontró ningún emote con el nombre "${currentName}" en el set.`);
     }
 
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);

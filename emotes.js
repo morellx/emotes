@@ -3,42 +3,15 @@ const SEVENTV_USER_ID = '01J454CT00000FEMV6VS56MJFQ';
 
 // Helper actualizado: Envía mensajes a través de la API Helix de Twitch para el distintivo de Bot
 async function responderChat(client, channel, mensaje) {
+  if (!client || typeof client.say !== 'function') {
+    console.error('❌ Error: El cliente de TMI.js no está disponible.');
+    return;
+  }
+
   try {
-    const clientId = process.env.TWITCH_CLIENT_ID;
-    const rawToken = process.env.TWITCH_ACCESS_TOKEN || ''; // Token OAuth con scope channel:bot y user:write:chat
-    const broadcasterId = process.env.TWITCH_BROADCASTER_ID; // ID numérico de tu canal
-    const senderId = process.env.TWITCH_BOT_USER_ID; // ID numérico de la cuenta del bot
-
-    if (!clientId || !rawToken || !broadcasterId || !senderId) {
-      console.error('❌ Error: Faltan variables de entorno para la API Helix (TWITCH_CLIENT_ID, TWITCH_ACCESS_TOKEN, TWITCH_BROADCASTER_ID, TWITCH_BOT_USER_ID).');
-      return;
-    }
-
-    // Aseguramos estrictamente el formato "Bearer <token>" evitando duplicidades o espacios vacíos
-    const cleanToken = rawToken.trim().replace(/^Bearer\s+/i, '');
-    const authHeader = `Bearer ${cleanToken}`;
-
-    const response = await fetch('https://api.twitch.tv/helix/chat/messages', {
-      method: 'POST',
-      headers: {
-        'Client-Id': clientId,
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        broadcaster_id: broadcasterId,
-        sender_id: senderId,
-        message: mensaje
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || (data.data && data.data[0] && !data.data[0].is_sent)) {
-      console.error('❌ [TWITCH HELIX ERROR]', data);
-    }
+    await client.say(channel, mensaje);
   } catch (err) {
-    console.error('❌ [CHAT ERROR - API HELIX]', err.message);
+    console.error('❌ [CHAT ERROR]', err.message);
   }
 }
 
@@ -172,20 +145,43 @@ async function manejarComandoAddEmote(client, channel, args) {
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
     
-    // Ejecutamos la mutación
+    // Obtenemos los emotes actuales del set para validar conflictos de nombres o duplicados
+    const { emotes, capacity } = await getEmotesInSet(activeSetId);
+
+    // 1. Validar si el ID exacto ya está agregado en el set
+    const existingById = emotes.find(e => e.id === emoteId);
+    if (existingById) {
+      return await responderChat(client, channel, `El emote ya se encuentra en el set con el nombre "${existingById.name}".`);
+    }
+
+    // 2. Si se pasa un customName, validar si ese nombre ya está ocupado en el set
+    if (customName) {
+      const nameConflict = emotes.find(e => e.name.toLowerCase() === customName.toLowerCase());
+      if (nameConflict) {
+        return await responderChat(client, channel, `❌ Error: Ya existe un emote con el nombre "${customName}" en este set.`);
+      }
+    }
+
+    // Ejecutamos la mutación de forma segura
     const updatedSet = await modify7TVEmoteSet(activeSetId, emoteId, 'ADD', token, customName);
 
-    // Consultamos el estado actual actualizado para obtener cantidad y límite exactos
-    const { emotes, capacity } = await getEmotesInSet(activeSetId);
+    // Consultamos el estado actual actualizado para obtener cantidad exacta
+    const setAfterAdd = await getEmotesInSet(activeSetId);
 
     const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `¡Emote: " ${finalName} " agregado!`);
+    await responderChat(client, channel, `¡"${finalName}" agregado! [${setAfterAdd.emotes.length}/${capacity}]`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
-     await responderChat(client, channel, `Error al añadir el emote: ${error.message}`);
+     
+     // Capturamos el error específico de nombre en conflicto por si la API lo lanza directamente
+     if (error.message.includes('conflicting name')) {
+       return await responderChat(client, channel, '❌ Error: El nombre de este emote entra en conflicto con otro existente en el set.');
+     }
+
+     await responderChat(client, channel, `❌ Error al añadir el emote: ${error.message}`);
   }
 }
 
@@ -201,7 +197,7 @@ async function manejarComandoDelEmote(client, channel, args) {
     const token = process.env.SEVENTV_TOKEN;
 
     if (!token) {
-      return await responderChat(client, channel, 'Error: Falta configurar SEVENTV_TOKEN en las variables de entorno.');
+      return await responderChat(client, channel, '❌ Error: Falta configurar SEVENTV_TOKEN en las variables de entorno.');
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
@@ -212,7 +208,7 @@ async function manejarComandoDelEmote(client, channel, args) {
     );
 
     if (!targetEmote) {
-      return await responderChat(client, channel, `Error: No se encontró el emote "${emoteName}" en el set activo.`);
+      return await responderChat(client, channel, `❌ Error: No se encontró el emote "${emoteName}" en el set activo.`);
     }
 
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
@@ -220,11 +216,11 @@ async function manejarComandoDelEmote(client, channel, args) {
     // Consultar de nuevo para reflejar el conteo actualizado tras el borrado
     const setAfterRemove = await getEmotesInSet(activeSetId);
 
-    await responderChat(client, channel, `¡Emote: " ${targetEmote.name} " eliminado!`);
+    await responderChat(client, channel, `¡Emote " ${targetEmote.name} " eliminado!`);
 
   } catch (error) {
     console.error('Error en comando -del:', error);
-    await responderChat(client, channel, `Error al intentar eliminar: ${error.message}`);
+    await responderChat(client, channel, `❌ Error al intentar eliminar: ${error.message}`);
   }
 }
 
@@ -241,7 +237,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
     const token = process.env.SEVENTV_TOKEN;
 
     if (!token) {
-      return await responderChat(client, channel, 'Error: Falta configurar SEVENTV_TOKEN en el archivo .env.');
+      return await responderChat(client, channel, '❌ Error: Falta configurar SEVENTV_TOKEN en el archivo .env.');
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
@@ -252,17 +248,17 @@ async function manejarComandoRenameEmote(client, channel, args) {
     );
 
     if (!targetEmote) {
-      return await responderChat(client, channel, `Error: No se encontró ningún emote con el nombre "${currentName}" en el set.`);
+      return await responderChat(client, channel, `❌ Error: No se encontró ningún emote con el nombre "${currentName}" en el set.`);
     }
 
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'ADD', token, newName);
     
-    await responderChat(client, channel, `¡Nombre de emote " ${currentName} " cambiado a " ${newName} "!`);
+    await responderChat(client, channel, `¡Emote " ${currentName} " cambiado a " ${newName} "!`);
 
   } catch (error) {
      console.error('Error al renombrar emote:', error);
-     await responderChat(client, channel, `Error al intentar renombrar: ${error.message}`);
+     await responderChat(client, channel, `❌ Error al intentar renombrar: ${error.message}`);
   }
 }
 
@@ -273,7 +269,7 @@ async function manejarComandoSetInfo(client, channel, args) {
     const { emotes, capacity } = await getEmotesInSet(activeSetId);
 
     if (emotes.length === 0) {
-      return await responderChat(client, channel, `El set de emotes está vacío [0/${capacity}].`);
+      return await responderChat(client, channel, `📊 El set de emotes está vacío [0/${capacity}].`);
     }
 
     // Ordenar por fecha de incorporación para mostrar cuál fue el más reciente añadido

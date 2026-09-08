@@ -91,6 +91,7 @@ async function modify7TVEmoteSet(emoteSetId, emoteId, action, token, customName 
   const query = `
     mutation UpdateEmoteSet($setId: ObjectID!, $action: ListItemAction!, $emoteId: ObjectID!, $name: String) {
       emoteSet(id: $setId) {
+        id
         emotes(id: $emoteId, action: $action, name: $name) {
           id
           name
@@ -163,20 +164,18 @@ async function manejarComandoAddEmote(client, channel, args) {
     }
 
     // Ejecutamos la mutación de forma segura
-    const updatedSet = await modify7TVEmoteSet(activeSetId, emoteId, 'ADD', token, customName);
+    await modify7TVEmoteSet(activeSetId, emoteId, 'ADD', token, customName);
 
-    // Consultamos el estado actual actualizado para obtener cantidad exacta
+    // Consultamos el estado actual actualizado para obtener datos reales
     const setAfterAdd = await getEmotesInSet(activeSetId);
-
-    const addedEmote = updatedSet?.emotes?.find(e => e.id === emoteId);
+    const addedEmote = setAfterAdd.emotes.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `¡ " ${finalName} " agregado!`);
+    await responderChat(client, channel, `¡" ${finalName} " agregado!`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
      
-     // Capturamos el error específico de nombre en conflicto por si la API lo lanza directamente
      if (error.message.includes('conflicting name')) {
        return await responderChat(client, channel, 'El nombre de este emote entra en conflicto con otro existente en el set.');
      }
@@ -213,10 +212,10 @@ async function manejarComandoDelEmote(client, channel, args) {
 
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
     
-    // Consultar de nuevo para reflejar el conteo actualizado tras el borrado
-    const setAfterRemove = await getEmotesInSet(activeSetId);
+    // Consultar de nuevo para refrescar el set
+    await getEmotesInSet(activeSetId);
 
-    await responderChat(client, channel, `¡Emote " ${targetEmote.name} " eliminado!`);
+    await responderChat(client, channel, `¡Emote "${targetEmote.name}" eliminado!`);
 
   } catch (error) {
     console.error('Error en comando -del:', error);
@@ -241,7 +240,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
     }
 
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
-    const { emotes, capacity } = await getEmotesInSet(activeSetId);
+    const { emotes } = await getEmotesInSet(activeSetId);
 
     const targetEmote = emotes.find(
       e => e && e.name && e.name.toLowerCase() === currentName.toLowerCase()
@@ -254,7 +253,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'ADD', token, newName);
     
-    await responderChat(client, channel, `¡Emote " ${currentName} " cambiado a " ${newName} "!`);
+    await responderChat(client, channel, `¡Emote "${currentName}" cambiado a "${newName}"!`);
 
   } catch (error) {
      console.error('Error al renombrar emote:', error);
@@ -262,7 +261,7 @@ async function manejarComandoRenameEmote(client, channel, args) {
   }
 }
 
-// 7. Manejador del nuevo comando -set (Consulta el estado actual del set)
+// 7. Manejador del comando -set
 async function manejarComandoSetInfo(client, channel, args) {
   try {
     const activeSetId = await getActiveEmoteSetId(SEVENTV_USER_ID);
@@ -271,10 +270,6 @@ async function manejarComandoSetInfo(client, channel, args) {
     if (emotes.length === 0) {
       return await responderChat(client, channel, `📊 El set de emotes está vacío [0/${capacity}].`);
     }
-
-    // Ordenar por fecha de incorporación para mostrar cuál fue el más reciente añadido
-    const sortedByRecent = [...emotes].sort((a, b) => b.timestamp - a.timestamp);
-    const masReciente = sortedByRecent[0]?.name || 'Ninguno';
 
     await responderChat(client, channel, `set actual de emotes: [${emotes.length}/${capacity}]`);
 

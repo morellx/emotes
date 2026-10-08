@@ -83,53 +83,31 @@ async function getEmotesInSet(emoteSetId) {
   };
 }
 
-// 3. Ejecuta la mutación GraphQL para modificar el set (ADD o REMOVE) de forma compatible con 7TV v3
+// 3. Ejecuta la mutación GraphQL para modificar el set (ADD o REMOVE)
 async function modify7TVEmoteSet(emoteSetId, emoteId, action, token, customName = null) {
   const cleanToken = token.trim().replace(/^Bearer\s+/i, '');
   const authHeader = `Bearer ${cleanToken}`;
 
-  let query = '';
-  let variables = {};
+  const query = `
+    mutation UpdateEmoteSet($setId: ObjectID!, $action: ListItemAction!, $emoteId: ObjectID!, $name: String) {
+      emoteSet(id: $setId) {
+        id
+        emotes(id: $emoteId, action: $action, name: $name) {
+          id
+          name
+        }
+      }
+    }
+  `;
 
-  if (action === 'ADD') {
-    query = `
-      mutation UpdateEmoteSetAdd($setId: ObjectID!, $emotes: [EmoteAddInput!]!) {
-        emoteSet(id: $setId) {
-          update(emotes: $emotes) {
-            id
-            emotes {
-              id
-              name
-            }
-          }
-        }
-      }
-    `;
-    variables = {
-      setId: emoteSetId,
-      emotes: [{
-        id: emoteId,
-        name: customName || undefined
-      }]
-    };
-  } else if (action === 'REMOVE') {
-    query = `
-      mutation UpdateEmoteSetRemove($setId: ObjectID!, $emotes: [ObjectID!]!) {
-        emoteSet(id: $setId) {
-          update(emotes_remove: $emotes) {
-            id
-            emotes {
-              id
-              name
-            }
-          }
-        }
-      }
-    `;
-    variables = {
-      setId: emoteSetId,
-      emotes: [emoteId]
-    };
+  const variables = {
+    setId: emoteSetId,
+    action: action,
+    emoteId: emoteId
+  };
+
+  if (customName && action === 'ADD') {
+    variables.name = customName;
   }
 
   const response = await fetch('https://7tv.io/v3/gql', {
@@ -193,7 +171,7 @@ async function manejarComandoAddEmote(client, channel, args) {
     const addedEmote = setAfterAdd.emotes.find(e => e.id === emoteId);
     const finalName = addedEmote ? addedEmote.name : (customName || 'Emote');
 
-    await responderChat(client, channel, `¡"${finalName}" agregado!`);
+    await responderChat(client, channel, `¡" ${finalName} " agregado!`);
 
   } catch (error) {
      console.error('Error al añadir emote:', error);
@@ -272,7 +250,6 @@ async function manejarComandoRenameEmote(client, channel, args) {
       return await responderChat(client, channel, `No se encontró ningún emote con el nombre "${currentName}" en el set.`);
     }
 
-    // Para renombrar, primero lo borramos y lo volvemos a añadir con el nuevo nombre usando su ID original
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'REMOVE', token);
     await modify7TVEmoteSet(activeSetId, targetEmote.id, 'ADD', token, newName);
     

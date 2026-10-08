@@ -24,7 +24,7 @@ const WHITELIST_USER_IDS = [
   '627778369',
   '817914894', // regulus 
   '510835610', // dislaiik
-  '792162996'  // lezmoth
+  '792162996' // lezmoth
 ];
 
 // Configuración e inicialización de tmi.js
@@ -44,11 +44,10 @@ client.connect()
 client.on('message', async (channel, userstate, message, self) => {
   if (self) return;
 
+  // 1. Extraemos el ID único de Twitch del usuario que envía el mensaje
   const userId = userstate['user-id'];
-  const username = userstate['username'];
 
-  console.log(`💬 Mensaje recibido de [${username}] (ID: ${userId}): "${message}"`);
-
+  // 2. Si el usuario NO está en la whitelist, el bot ignora el mensaje por completo
   if (!WHITELIST_USER_IDS.includes(userId)) {
     return;
   }
@@ -56,8 +55,6 @@ client.on('message', async (channel, userstate, message, self) => {
   const cleanMessage = message.trim();
   const args = cleanMessage.split(/\s+/);
   const command = args.shift().toLowerCase();
-
-  console.log(`⚙️ Ejecutando comando: [${command}]`);
 
   if (command === '-add') {
     await manejarComandoAddEmote(client, channel, args);

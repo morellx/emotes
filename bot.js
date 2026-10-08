@@ -24,7 +24,7 @@ const WHITELIST_USER_IDS = [
   '627778369',
   '817914894', // regulus 
   '510835610', // dislaiik
-  '792162996' // lezmoth
+  '792162996'  // lezmoth
 ];
 
 // Configuración e inicialización de tmi.js

@@ -44,26 +44,20 @@ client.connect()
 client.on('message', async (channel, userstate, message, self) => {
   if (self) return;
 
-  // 1. Extraemos el ID único de Twitch del usuario que envía el mensaje
   const userId = userstate['user-id'];
   const username = userstate['username'];
 
-  // LOG DE DEPURACIÓN: Ver quién habla y qué ID trae
   console.log(`💬 Mensaje recibido de [${username}] (ID: ${userId}): "${message}"`);
 
-  // 2. Si el usuario NO está en la whitelist, el bot ignora el mensaje por completo
   if (!WHITELIST_USER_IDS.includes(userId)) {
-    console.log(`⛔ Usuario ${username} (ID: ${userId}) NO autorizado en whitelist.`);
     return;
   }
-
-  console.log(`✅ Usuario ${username} autorizado. Procesando comando...`);
 
   const cleanMessage = message.trim();
   const args = cleanMessage.split(/\s+/);
   const command = args.shift().toLowerCase();
 
-  console.log(`⚙️ Comando detectado: [${command}] con argumentos:`, args);
+  console.log(`⚙️ Ejecutando comando: [${command}]`);
 
   if (command === '-add') {
     await manejarComandoAddEmote(client, channel, args);

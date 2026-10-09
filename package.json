@@ -4,10 +4,10 @@
     "tmi.js": "^1.8.5",
     "ws": "^8.21.2"
   },
-  "scripts": {
-    "start": "node bot.js"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+"engines": {
+  "node": ">=18.0.0"
+},
+"scripts": {
+  "start": "node bot.js"
+}
 }

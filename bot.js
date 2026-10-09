@@ -24,7 +24,7 @@ const WHITELIST_USER_IDS = [
   '627778369',
   '817914894', // regulus 
   '510835610', // dislaiik
-  '792162996' // lezmoth
+  '792162996'  // lezmoth
 ];
 
 // Configuración e inicialización de tmi.js
@@ -53,16 +53,22 @@ client.on('message', async (channel, userstate, message, self) => {
   }
 
   const cleanMessage = message.trim();
+  if (!cleanMessage.startsWith('-')) return; // Asegurar que sea un comando válido
+
   const args = cleanMessage.split(/\s+/);
   const command = args.shift().toLowerCase();
 
-  if (command === '-add') {
-    await manejarComandoAddEmote(client, channel, args);
-  } else if (command === '-del') {
-    await manejarComandoDelEmote(client, channel, args);
-  } else if (command === '-rename') {
-    await manejarComandoRenameEmote(client, channel, args);
-  } else if (command === '-set') {
-    await manejarComandoSetInfo(client, channel, args);
+  try {
+    if (command === '-add') {
+      await manejarComandoAddEmote(client, channel, args, userstate);
+    } else if (command === '-del') {
+      await manejarComandoDelEmote(client, channel, args, userstate);
+    } else if (command === '-rename') {
+      await manejarComandoRenameEmote(client, channel, args, userstate);
+    } else if (command === '-set') {
+      await manejarComandoSetInfo(client, channel, args, userstate);
+    }
+  } catch (error) {
+    console.error(`❌ Error al ejecutar el comando ${command}:`, error);
   }
 });
